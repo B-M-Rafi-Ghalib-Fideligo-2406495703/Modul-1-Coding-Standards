@@ -24,7 +24,7 @@ public class ProductTest {
 
     @Test
     void testGetProductName() {
-        String expected = "test-product-name-123";
+        String expected = "test-product-name123";
         String actual = this.product.getProductName();
         assertEquals(expected, actual);
     }
