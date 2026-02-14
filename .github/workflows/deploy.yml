@@ -13,20 +13,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-#       install
-      - name: Install Koyeb CLI
-        uses: koyeb/action-install-cli@v2
+      # --- PERBAIKAN: Gunakan nama action yang benar ---
+      - name: Install and configure the Koyeb CLI
+        uses: koyeb-community/koyeb-actions@v2
         with:
-          api_token: ${{ secrets.KOYEB_API_TOKEN }}
+          api_token: "${{ secrets.KOYEB_API_TOKEN }}"
 
-#        deploy
-      - name: Deploy to Koyeb
+      # --- DEPLOYMENT ---
+      - name: Build and deploy the application to Koyeb
         uses: koyeb/action-git-deploy@v1
         with:
           app-name: eshop-adpro-fideligo
           service-name: eshop-service
           git-builder: buildpack
           service-env: SERVER_PORT=8080
-          service-ports: 8080:http
-          service-routes: /:8080
-          skip-cache: true
+          service-ports: "8080:http"
+          service-routes: "/:8080"
