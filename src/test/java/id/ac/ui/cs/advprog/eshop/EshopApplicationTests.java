@@ -11,4 +11,9 @@ class EshopApplicationTests {
         // this method is blank on purpose, just to make sure springboot runs without any errors
     }
 
+    @Test
+    void main() {
+        EshopApplication.main(new String[] {});
+    }
+
 }
