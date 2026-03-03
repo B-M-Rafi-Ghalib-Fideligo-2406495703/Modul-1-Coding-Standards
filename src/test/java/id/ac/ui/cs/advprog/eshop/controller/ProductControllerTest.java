@@ -70,7 +70,7 @@ class ProductControllerTest {
         p1.setProductId("test-id");
         Mockito.when(productService.getProductById("test-id")).thenReturn(p1);
 
-        mockMvc.perform(get("/product/test-id/edit"))
+        mockMvc.perform(get("/product/edit/test-id"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("editProduct"))
                 .andExpect(model().attributeExists("product"))
@@ -79,7 +79,7 @@ class ProductControllerTest {
 
     @Test
     void testEditProductPost() throws Exception {
-        mockMvc.perform(post("/product/test-id/edit")
+        mockMvc.perform(post("/product/edit/test-id")
                         .param("productId", "test-id")
                         .param("productName", "new-name")
                         .param("productQuantity", "20"))
@@ -91,7 +91,7 @@ class ProductControllerTest {
 
     @Test
     void testDeleteProduct() throws Exception {
-        mockMvc.perform(delete("/product/test-id/delete"))
+        mockMvc.perform(delete("/product/delete/test-id"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("../list"));
                 
