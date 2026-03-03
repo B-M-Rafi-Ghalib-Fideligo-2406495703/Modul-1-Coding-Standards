@@ -81,3 +81,72 @@ Yes, the current implementation meets the core definitions of Continuous Integra
 3.  **Overall**:
     *   The combination of these workflows creates a streamlined pipeline where code flows from development to production with automated checks at every stage, significantly improving development velocity and reliability.
 
+
+## Reflection 4
+
+### SOLID Principles
+
+#### 1. Principles Applied to This Project
+
+**Single Responsibility Principle (SRP)**
+Each class has exactly one reason to change:
+- `ProductController` handles HTTP routing for product endpoints only.
+- `CarController` handles HTTP routing for car endpoints only. Previously, `CarController` was defined *inside* `ProductController.java`, making that file responsible for two unrelated concerns. It was extracted into its own dedicated file.
+- `CarServiceImpl` encapsulates only car business logic; `ProductServiceImpl` encapsulates only product business logic.
+- `CarRepository` and `ProductRepository` each handle data persistence for their respective entities only.
+
+**Open/Closed Principle (OCP)**
+The system is open for extension without modifying existing code:
+- `CarService` and `ProductService` are interfaces. To add new behavior (e.g., a `PremiumCarService`), a new implementing class can be introduced without changing `CarServiceImpl` or any controller.
+- Controllers depend on service interfaces, so a new implementation can be plugged in via Spring's `@Qualifier` with zero changes to the controller code.
+
+**Liskov Substitution Principle (LSP)**
+Previously, `CarController extends ProductController` was a clear LSP violation. `CarController` inherited unrelated product endpoints (`createProductPage`, `productListPage`, etc.) that made no sense in a car context. Substituting a `CarController` for a `ProductController` would expose incorrect behavior. This was corrected by making `CarController` a standalone class with no inheritance.
+
+**Interface Segregation Principle (ISP)**
+`CarService` and `ProductService` are kept as separate, focused interfaces. `CarController` only knows about the 5 car-specific methods in `CarService`; it has no dependency on `ProductService` methods. Neither interface contains methods irrelevant to its consumers.
+
+**Dependency Inversion Principle (DIP)**
+High-level modules must not depend on low-level modules; both must depend on abstractions:
+- `CarController` injects `CarService` (interface), not `CarServiceImpl`.
+- `ProductController` injects `ProductService` (interface).
+- `CarServiceImpl` previously used `@Autowired` field injection directly on the concrete `CarRepository` class. This was refactored to **constructor injection**, making the dependency explicit, immutable, and fully testable without a Spring context.
+
+---
+
+#### 2. Advantages of Applying SOLID Principles
+
+**Testability (DIP + SRP)**
+Because `CarController` injects `CarService` via interface, tests can mock it with `@MockBean` without needing `CarRepository` at all:
+```java
+@WebMvcTest(controllers = CarController.class)
+class CarControllerTest {
+    @MockBean
+    private CarService carService; // no CarServiceImpl or CarRepository needed
+}
+```
+
+**Maintainability (SRP)**
+With `CarController` and `ProductController` in separate files, a change to car endpoints cannot accidentally break product routes. Each class has a single, clear reason to change.
+
+**Extensibility (OCP)**
+To add a `CachedCarService` that wraps results in a cache layer, only a new class implementing `CarService` is needed. The controller, repository, and existing `CarServiceImpl` are untouched.
+
+**Clarity (ISP)**
+A developer reading `CarController` immediately understands it only needs `CarService` — no confusion about whether it also handles products or other domains.
+
+---
+
+#### 3. Disadvantages of Not Applying SOLID Principles
+
+**Hard to Test (DIP violation)**
+When `CarServiceImpl` used `@Autowired private CarRepository carRepository`, any unit test for `CarServiceImpl` required a real Spring bean or complex workarounds. Constructor injection makes the dependency an explicit parameter: `new CarServiceImpl(mockCarRepository)`.
+
+**Fragile Code (SRP violation)**
+Having `CarController` inside `ProductController.java` meant any syntax error in the car section would break the entire file, preventing the product controller from compiling or loading. Two distinct reasons to change in one file.
+
+**Inheritance Misuse Breaks Correctness (LSP violation)**
+When `CarController extends ProductController`, a bug in `ProductController`'s constructor silently cascades and breaks `CarController`. Worse, `CarController` inherited meaningless product endpoints that could be accidentally invoked in a car context, producing incorrect behavior.
+
+**Tight Coupling Prevents Iteration (OCP violation)**
+If `CarController` had directly instantiated `new CarServiceImpl(new CarRepository())` instead of using interface injection, swapping the service implementation would require modifying the controller's source code — breaking the closed-for-modification guarantee.
